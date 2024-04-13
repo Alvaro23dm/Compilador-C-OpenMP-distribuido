@@ -11,3 +11,5 @@ lex.yy.cc
 
 # Archivos core generados por el sistema
 core
+
+.vscode/*
