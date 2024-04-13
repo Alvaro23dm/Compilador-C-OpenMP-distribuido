@@ -1,0 +1,11 @@
+# Archivos generados por el Makefile
+fparse
+y.tab.cc
+y.tab.h
+lex.yy.cc
+
+# Archivos objeto generados por el compilador
+*.o
+
+# Archivos core generados por el sistema
+core
