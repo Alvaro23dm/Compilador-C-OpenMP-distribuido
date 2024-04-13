@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -17,7 +16,7 @@ int main( int argc, const char* argv[] )
 
   /* missing parameter check */
 
-  /* yydebug=1; */
+  yydebug=1;
 
 
   /* open files */
