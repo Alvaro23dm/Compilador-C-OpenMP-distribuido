@@ -11,14 +11,12 @@ extern void yyerror(const char *s);
 extern int yyparse ();
 
 
-int main(argc, argv)
-int argc;
-char** argv;
+int main( int argc, const char* argv[] )
 {
   char* infilename;
 
   /* missing parameter check */
-    
+
   /* yydebug=1; */
 
 
@@ -29,7 +27,7 @@ char** argv;
     strcpy(infilename, argv[1]);
     if ((yyin=fopen(argv[1],"r"))==NULL){
       yyerror("unable to open inputfile");
-    }    
+    }
     argc--;
     argv++;
   }else{
