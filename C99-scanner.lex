@@ -8,6 +8,7 @@ IS                      ((u|U)|(u|U)?(l|L|ll|LL)|(l|L|ll|LL)(u|U))
 
 %{
 #include <iostream>
+#include <cstdio>
 #include "y.tab.hh"
 
 extern void yyerror(const char *);
@@ -15,6 +16,10 @@ extern void yyerror(const char *);
 static void count(void);
 static void comment(void);
 static int check_type(void);
+static int line = 0;
+
+FILE* fich = fopen("Tokens.txt", "w");
+
 
 %}
 
@@ -79,6 +84,7 @@ L?'(\\.|[^\\'\n])+'	{ count(); return(CONSTANT); }
 
 
 L?\"(\\.|[^\\"\n])*\"	{ count(); return(STRING_LITERAL); }
+<<EOF>>         fclose(fich); return 0;
 
 "..."			{ count(); return(ELLIPSIS); }
 ">>="			{ count(); return(RIGHT_ASSIGN); }
@@ -157,17 +163,34 @@ void comment()
 int column = 0;
 
 void count() {
-    int i;
-
-    for (i = 0; yytext[i] != '\0'; i++)
-        if (yytext[i] == '\n')
-            column = 0;
-        else if (yytext[i] == '\t')
-            column += 8 - (column % 8);
-        else
+    if (yytext[0] == ' ') {
+        fprintf(fich, "Token encontrado en línea %d: ESPACIO\n",line);
+    }
+    else if (yytext[0] == '\t') {
+        column += 8 - (column % 8);
+        fprintf(fich, "Token encontrado en línea %d: TABULADOR\n",line);
+    }
+    else if (yytext[0] == '\v') {
+        fprintf(fich, "Token encontrado en línea %d: TABULADOR VERTICAL\n",line);
+    }
+    else if (yytext[0] == '\n') {
+        fprintf(fich, "Token encontrado en línea %d: SALTO DE LÍNEA\n",line);
+        column = 0;
+        line ++;
+    }
+    else if (yytext[0] == '\f') {
+        fprintf(fich, "Token encontrado en línea %d: SALTO DE PÁGINA\n",line);
+    }
+    else{
+        for (int i = 0; yytext[i] != '\0'; i++) {
             column++;
 
-    std::cout << yytext << std::endl;
+        fprintf(fich, "Token encontrado en línea %d: %c\n",line, yytext[i]);
+        // std::cout << yytext[i];
+
+        }
+    }
+
 }
 
 int check_type() {
