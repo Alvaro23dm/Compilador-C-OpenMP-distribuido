@@ -7,8 +7,8 @@ FS			(f|F|l|L)
 IS                      ((u|U)|(u|U)?(l|L|ll|LL)|(l|L|ll|LL)(u|U))
 
 %{
-#include <stdio.h>
-#include "y.tab.h"
+#include <iostream>
+#include "y.tab.hh"
 
 extern void yyerror(const char *);
 
@@ -132,62 +132,57 @@ L?\"(\\.|[^\\"\n])*\"	{ count(); return(STRING_LITERAL); }
 
 %%
 
-int yywrap(void)
+int yywrap()
 {
 	return 1;
 }
 
 
-void comment(void)
+void comment()
 {
 	char c, prev = 0;
 
-        ECHO;
-  
-	while ((c = input()) != 0)      /* (EOF maps to 0) */
-	{
-		if (yyout != NULL)
-			fputc(c, yyout);
-		if (c == '/' && prev == '*')
-			return;
-		prev = c;
-	}
-	yyerror("unterminated comment");
-}
+	std::cout << yytext << std::endl;
 
+	while ((c = yyinput()) != 0) { // (EOF maps to 0)
+        if (yyout != nullptr)
+            fputc(c, yyout);
+        if (c == '/' && prev == '*')
+            return;
+        prev = c;
+    }
+    yyerror("unterminated comment");
+}
 
 int column = 0;
 
-void count(void)
-{
-	int i;
+void count() {
+    int i;
 
-	for (i = 0; yytext[i] != '\0'; i++)
-		if (yytext[i] == '\n')
-			column = 0;
-		else if (yytext[i] == '\t')
-			column += 8 - (column % 8);
-		else
-			column++;
+    for (i = 0; yytext[i] != '\0'; i++)
+        if (yytext[i] == '\n')
+            column = 0;
+        else if (yytext[i] == '\t')
+            column += 8 - (column % 8);
+        else
+            column++;
 
-	ECHO;
+    std::cout << yytext << std::endl;
 }
 
+int check_type() {
+    /*
+    * pseudo code --- this is what it should check
+    *
+    *   if (yytext == type_name)
+    *       return TYPE_NAME;
+    *
+    *   return IDENTIFIER;
+    */
 
-int check_type(void)
-{
-/*
-* pseudo code --- this is what it should check
-*
-*	if (yytext == type_name)
-*		return TYPE_NAME;
-*
-*	return IDENTIFIER;
-*/
+    /*
+    *   it actually will only return IDENTIFIER
+    */
 
-/*
-*	it actually will only return IDENTIFIER
-*/
-
-	return IDENTIFIER;
+    return IDENTIFIER;
 }
