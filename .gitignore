@@ -1,8 +1,10 @@
 # Archivos generados por el Makefile
 fparse
 y.tab.cc
-y.tab.h
+*.hh
 lex.yy.cc
+*.gv
+*.output
 
 # Archivos objeto generados por el compilador
 *.o
