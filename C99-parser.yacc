@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include "lex.yy.cc"
 #include "SymbolTable.h"
 
 std::ofstream sfich("./logs/semantic.txt", std::ios_base::out);
@@ -13,8 +14,8 @@ extern int yylex(void);
 extern int line;
 
 
-
-extern char yytext[];
+SymbolTable table(13);
+//extern char yytext[];
 extern int column;
 
 void yyerror(char const *s)
@@ -30,7 +31,7 @@ void log(const std::string& str){
 %}
 
 %union {
-    SymbolInfo* symPtr; 
+	SymbolInfo* symPtr;
 }
 
 %token <symPtr> IDENTIFIER
