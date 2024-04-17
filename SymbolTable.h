@@ -27,7 +27,6 @@ uint32_t sdbm(string str)
     }
 
 
-
 class ForPrinting{
     string to_print;
     bool baseRecursion = true;
@@ -42,8 +41,6 @@ class ForPrinting{
     int stmt1_end_marker;
     int stmt2_start_marker;
     int stmt2_end_marker;
-
-    
    
     ForPrinting(){
 
