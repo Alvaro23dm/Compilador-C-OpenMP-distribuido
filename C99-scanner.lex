@@ -4,7 +4,8 @@
 #include <cstdio>
 #include <string>
 #include "y.tab.hh"
-#include "ST.h"
+#include <FlexLexer.h>
+#include "SymbolTable.h"
 
 
 extern void yyerror(const char *);
@@ -74,9 +75,8 @@ IS                      ((u|U)|(u|U)?(l|L|ll|LL)|(l|L|ll|LL)(u|U))
 {L}({L}|{D})*		{ 
                         count(); 
                         log("IDENTIFIER", yytext); 
-                        SymbolInfo* sym = new SymbolInfo(yytext, "IDENTIFIER");
+                        yylval.symPtr = new SymbolInfo(yytext, "IDENTIFIER");
                         yylval.symPtr -> setToPrint(yytext);
-                        yylval.symPtr = sym;
                         return IDENTIFIER;
                     }
 
