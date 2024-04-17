@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "SymbolTable.h"
 
 extern int yydebug;
 extern FILE *yyin, *yyout;
+extern int line;
 
 extern int MVL_LINNUM;
 
@@ -17,7 +19,7 @@ int main( int argc, const char* argv[] )
 
   /* missing parameter check */
 
-  yydebug=1;
+  // yydebug=1;
 
 
   /* open files */
