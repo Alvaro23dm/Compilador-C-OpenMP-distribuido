@@ -1,8 +1,0 @@
-Token encontrado en línea 0: i
-Token encontrado en línea 0: n
-Token encontrado en línea 0: t
-Token encontrado en línea 0: ESPACIO
-Token encontrado en línea 0: x
-Token encontrado en línea 0: =
-Token encontrado en línea 0: 0
-Token encontrado en línea 0: ;
