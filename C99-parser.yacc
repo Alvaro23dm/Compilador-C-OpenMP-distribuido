@@ -1,10 +1,40 @@
 
 %{
-void yyerror(char const *s);
-extern int yylex (void);
+#include <iostream>
+#include <fstream>
+#include <string>
+#include "SymbolTable.h"
+
+std::ofstream sfich("./logs/semantic.txt", std::ios_base::out);
+
+void yyerror(const char *s); // Debes declarar correctamente la firma de la función yyerror
+void log(const std::string& str);
+extern int yylex(void);
+extern int line;
+
+
+
+extern char yytext[];
+extern int column;
+
+void yyerror(char const *s)
+{
+	fflush(stdout);
+	printf("\n%*s\n%*s\n", column, "^", column, s);
+}
+
+void log(const std::string& str){
+	sfich << "Linea " << line << ": " << str << "\n";
+}
+
 %}
 
-%token IDENTIFIER CONSTANT STRING_LITERAL SIZEOF
+%union {
+    SymbolInfo* symPtr; 
+}
+
+%token <symPtr> IDENTIFIER
+%token CONSTANT STRING_LITERAL SIZEOF
 %token PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
 %token AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
 %token SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
@@ -17,8 +47,12 @@ extern int yylex (void);
 
 %token CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
 
-%start translation_unit
+%start start
 %%
+
+start : translation_unit{log("Syntax Terminado\n");
+						sfich.close();}
+	;
 
 primary_expression
 	: IDENTIFIER
@@ -194,21 +228,23 @@ storage_class_specifier
 	;
 
 type_specifier
-	: VOID
-	| CHAR
-	| SHORT
-	| INT
-	| LONG
-	| FLOAT
-	| DOUBLE
-	| SIGNED
-	| UNSIGNED
-	| BOOL
-	| COMPLEX
-	| IMAGINARY
-	| struct_or_union_specifier
-	| enum_specifier
-	| TYPE_NAME
+	: VOID { log("Tipo VOID"); }
+	| CHAR { log("Tipo CHAR"); }
+	| SHORT { log("Tipo SHORT"); }
+	| INT { 
+				log("Tipo INT"); 
+		}
+	| LONG { log("Tipo LONG"); }
+	| FLOAT { log("Tipo FLOAT"); }
+	| DOUBLE { log("Tipo DOUBLE"); }
+	| SIGNED { log("Tipo SIGNED"); }
+	| UNSIGNED { log("Tipo UNSIGNED"); }
+	| BOOL { log("Tipo BOOL"); }
+	| COMPLEX { log("Tipo COMPLEX"); }
+	| IMAGINARY { log("Tipo IMAGINARY"); }
+	| struct_or_union_specifier { log("Tipo STRUCT/UNION"); }
+	| enum_specifier { log("Tipo ENUM"); }
+	| TYPE_NAME { log("Tipo TYPE_NAME"); }
 	;
 
 struct_or_union_specifier
@@ -329,7 +365,7 @@ parameter_declaration
 	;
 
 identifier_list
-	: IDENTIFIER
+	: IDENTIFIER {printf("Aqui");}
 	| identifier_list ',' IDENTIFIER
 	;
 
@@ -462,16 +498,3 @@ declaration_list
 	: declaration
 	| declaration_list declaration
 	;
-
-
-%%
-#include <stdio.h>
-
-extern char yytext[];
-extern int column;
-
-void yyerror(char const *s)
-{
-	fflush(stdout);
-	printf("\n%*s\n%*s\n", column, "^", column, s);
-}
