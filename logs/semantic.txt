@@ -1,3 +1,0 @@
-Linea 0: Tipo INT
-Linea 0: Syntax Terminado
-

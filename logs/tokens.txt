@@ -1,5 +1,0 @@
-Token encontrado en línea 1: <INT, ->
-Token encontrado en línea 1: <IDENTIFIER, x>
-Token encontrado en línea 1: <=, ->
-Token encontrado en línea 1: <CONSTANT, 1>
-Token encontrado en línea 1: <;, ->
