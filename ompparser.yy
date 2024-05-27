@@ -13,6 +13,7 @@
 %define parse.error verbose
 
 %{
+using namespace std;
 /* DQ (2/10/2014): IF is conflicting with Boost template IF. */
 #undef IF
 
@@ -26,15 +27,19 @@ extern int openmp_lex();
 
 /*A customized initialization function for the scanner, str is the string to be scanned.*/
 extern void openmp_lexer_init(const char* str);
-
 /* Standalone ompparser */
 extern void start_lexer(const char* input);
 extern void end_lexer(void);
 
 extern void openmp_parse_expr();
 static int openmp_error(const char*);
+
 void * (*exprParse)(const char*) = NULL;
 
+//From template
+extern void addArg(const char *arg);
+extern void MPIAlloc();
+extern void MPIBroad();
 
 %}
 
@@ -72,13 +77,13 @@ corresponding C type is union name defaults to YYSTYPE.
  LINK DEVICE_TYPE MAP MAP_MODIFIER_ALWAYS MAP_MODIFIER_CLOSE MAP_MODIFIER_MAPPER MAP_TYPE_TO MAP_TYPE_FROM MAP_TYPE_TOFROM MAP_TYPE_ALLOC MAP_TYPE_RELEASE MAP_TYPE_DELETE EXT_ BARRIER TASKWAIT FLUSH RELEASE ACQUIRE ATOMIC READ WRITE CAPTURE HINT CRITICAL SOURCE SINK DESTROY THREADS
         CONCURRENT CLUSTER ALLOC BROAD SCATTER GATHER ALLGATHER ALLREDUCTION CHUNK HALO TASK_ASYNC 
 %token <itype> ICONSTANT
-%token <stype> EXPRESSION ID_EXPRESSION EXPR_STRING VAR_STRING TASK_REDUCTION
+%token <stype> EXPRESSION ID_EXPRESSION EXPR_STRING VAR_STRING TASK_REDUCTION 
 /* associativity and precedence */
 %left '<' '>' '=' "!=" "<=" ">="
 %left '+' '-'
 %left '*' '/' '%'
 
-%type <stype> expression
+%type <stype> expression variable
 
 /* start point for the parsing */
 %start openmp_directive
@@ -86,15 +91,22 @@ corresponding C type is union name defaults to YYSTYPE.
 %%
 
 /* lang-dependent expression is only used in clause, at this point, the current_clause object should already be created. */
-expression : EXPR_STRING { }
-variable :   EXPR_STRING { } 
+expression : EXPR_STRING {$$=$1; }
+variable :   EXPR_STRING {$$=$1; } 
 
 /*expr_list : expression
         | expr_list ',' expression
         ;
 */
-var_list : variable
-        | var_list ',' variable
+var_list : variable {
+                      printf("var1: %s\n", $1);
+                      addArg($1);
+                    }
+        | var_list ',' variable 
+                    {
+                      printf("var2: %s\n", $3);
+                      addArg($3);
+                    }
         ;
 		
 var_chunk : variable ':' CHUNK '(' variable ')'
@@ -3032,9 +3044,9 @@ allocator_parameter : DEFAULT_MEM_ALLOC { }
 private_clause : PRIVATE { } '(' var_list ')' { }
                ;
 
-alloc_clause : ALLOC { } '(' var_list ')' ;
+alloc_clause : ALLOC '(' var_list ')' { MPIAlloc(); };
 
-broad_clause : BROAD { } '(' var_list ')' ;
+broad_clause : BROAD { } '(' var_list ')' { MPIBroad(); };
 
 scatter_clause : SCATTER { } '(' var_chunk_list ')' ;
 			   
