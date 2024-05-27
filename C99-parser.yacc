@@ -1,10 +1,14 @@
 %{
 #include<bits/stdc++.h>
 #include "1805082_SymbolTable.h"
+#include "templates.h"
 void yyerror(char const *s);
 extern int yylex (void);
 
 int error_count = 0;
+
+int main_init = 0;
+int main_end = 0;
 
 extern ofstream logFile;
 extern ofstream errFile;
@@ -530,7 +534,9 @@ labeled_statement
 
 compound_statement
 	: '{' '}'
-	| '{' block_item_list '}'
+	| '{' 
+	block_item_list  
+	'}'
 	;
 
 block_item_list
@@ -540,7 +546,15 @@ block_item_list
 
 block_item
 	: declaration
-	| statement
+	| 
+	{
+		if(main_init == 1){
+			MPIInit();
+			main_init = 0;
+			main_end = 1;
+		}
+	}
+	statement
 	;
 
 expression_statement
@@ -567,8 +581,24 @@ jump_statement
 	: GOTO IDENTIFIER ';'
 	| CONTINUE ';'
 	| BREAK ';'
-	| RETURN ';'
-	| RETURN expression ';'
+	| 
+	
+	RETURN {	
+		if(main_end == 1){
+			MPIFinalize();
+			main_end = 0;
+		}
+	}  ';'
+	| 
+	
+	RETURN 
+	{	
+		if(main_end == 1){
+			MPIFinalize();
+			main_end = 0;
+		}
+	}
+	expression ';'
 	;
 
 translation_unit
@@ -587,6 +617,9 @@ function_definition
 		$2->setVariableType($1->getSymbolType());
 		if (table.insert($2)) {
 			logFile << "Inserted Function: " << $2->getSymbolName() << " in scope " << table.printScopeId() << endl;
+			if($2->getSymbolName() == "main"){
+				main_init = 1;
+			}
 		}
 		else {
 			logFile << "Error: " << $2->getSymbolName() << " already exists in scope " << endl;
@@ -608,6 +641,9 @@ function_definition
 		$2->setVariableType($1->getSymbolType());
 		if (table.insert($2)) {
 			logFile << "Inserted Function: " << $2->getSymbolName() << " in scope " << table.printScopeId() << endl;
+			if($2->getSymbolName() == "main"){
+				main_init = 1;
+			}
 		}
 		else {
 			logFile << "Error: " << $2->getSymbolName() << " already exists in scope " << endl;
