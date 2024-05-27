@@ -9,11 +9,13 @@ IS                      ((u|U)|(u|U)?(l|L|ll|LL)|(l|L|ll|LL)(u|U))
 %{
 #include<bits/stdc++.h>
 #include "1805082_SymbolTable.h"
+#include "writer.h"
 #include <stdio.h>
 #include <cstring>
 #include <fstream>
 #include "y.tab.hh"
 
+extern ofstream output;
 extern void parseOpenMP(const char* _input, void * _exprParse(const char*));
 extern void yyerror(const char *);
 
@@ -220,7 +222,9 @@ void comment(void)
 void count(void)
 {
 	int i;
-
+	setYytext(yytext);
+	updateText();
+	
 	for (i = 0; yytext[i] != '\0'; i++)
 		if (yytext[i] == '\n'){
 			line_count++;
@@ -231,7 +235,7 @@ void count(void)
 		else
 			column++;
 
-	ECHO;
+	//ECHO;
 }
 
 
