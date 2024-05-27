@@ -8,12 +8,13 @@ extern int yydebug;
 extern FILE *yyin, *yyout;
 FILE *inputFile;
 
+extern char *linea;
 extern int MVL_LINNUM;
 
 extern void yyerror(const char *s);
 extern int yyparse ();
 
-std::ofstream logFile, errFile, sym_tables;
+std::ofstream logFile, errFile, sym_tables, output;
 
 extern int error_count, line_count;
 
@@ -22,7 +23,7 @@ extern SymbolTable table;
 int main( int argc, const char* argv[] )
 {
   /* missing parameter check */
-    
+
   /* yydebug=1; */
 
 
@@ -41,9 +42,7 @@ int main( int argc, const char* argv[] )
   errFile.open(argv[3]);
 
   if (argc==5){
-    if ((yyout=fopen(argv[4],"w"))==NULL){
-      yyerror("could not open outputfile\n");
-    }
+    output.open(argv[4]);
   }
 
   sym_tables.open("sym_tables.txt");
@@ -54,15 +53,17 @@ int main( int argc, const char* argv[] )
 
   yyparse();
 
+  output << (linea ? linea : "") << endl;
   table.exitScope();
 
   logFile << endl;
   logFile << "Total lines: " << line_count << endl;
   logFile << "Total errors: " << error_count << endl << endl;
 
-  table.printCurrScopeTable(); // Print the current scope table
+  table.printCurrScopeTable();
 
   logFile.close();
+  output.close();
   sym_tables.close();
   errFile.close();
   fclose(yyin);
