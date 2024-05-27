@@ -10,8 +10,9 @@
 using namespace std;
 
 extern ofstream output;
-int statementZone = 0;
 
+int statementZone = 0;
+int prePragma = 0;
 char * _yytext=NULL;
 char *linea = NULL;
 
@@ -38,12 +39,12 @@ void updateText() {
         strcat(addToLinea, _yytext);
         linea = addToLinea;
     } else {
-        //if(statementZone == 1){
-            //output << (linea ? "\t" + string(linea) : "") << endl;
-        //}
-        //else{
+        if(statementZone == 1 && prePragma == 0) {
+            output << (linea ? "\t" + string(linea) : "") << endl;
+        }
+        else{
             output << (linea ? linea : "") << endl;
-        //}
+        }
         delete[] linea;
         linea = NULL;
     }

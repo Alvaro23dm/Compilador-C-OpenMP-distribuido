@@ -16,9 +16,14 @@ vector<const char *> args;
 
 extern ofstream output, errFile;
 extern int statementZone;
+extern int prePragma;
 extern SymbolTable table;
 
 //-------------------------------AUXILIARES--------------------
+void setPrePragma(){
+    prePragma = 1;
+    output << "\t}" << endl;
+}
 
 void addArg(const char *arg){
     
@@ -91,6 +96,10 @@ void MPIFinalize(){
 
 
 void MPIAlloc(){
+    if(prePragma==0){
+        setPrePragma();
+    }
+
     if(args.size() != 1){
         errFile << "Error: Alloc pragma must have 1 argument and it has " << args.size() << endl;
         exit(1);
@@ -117,7 +126,10 @@ void MPIAlloc(){
 }
 
 void MPIBroad(){
-    printf("Holaaaaaaaaaaaaaaaaaa\n");
+    if(prePragma==0){
+        setPrePragma();
+    }
+    
     if(args.size() != 2){
         errFile << "Error: Broad pragma must have 2 argument and it has " << args.size() << endl;
         exit(1);
