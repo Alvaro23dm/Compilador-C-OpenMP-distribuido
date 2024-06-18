@@ -48,6 +48,9 @@ extern int error_count;
                 if (pragma != NULL) {
                     parseOpenMP(pragma+7, NULL);
                 }
+				else{
+					output << "#" << line << endl;
+				}
               }
 "/*"			{ comment(); }
 "//"[^\n]*              { /* consume //-comment */ }
