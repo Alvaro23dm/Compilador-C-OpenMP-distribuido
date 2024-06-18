@@ -97,7 +97,7 @@ vector<string> splitMatAIndices(const string& input) {
 }
 
 void preConfPragma(){
-    statementZone == 1;
+    //statementZone = 1; //puede dar problemas
     if(zonaPragma==0){
         finSecuencial();
     }
@@ -168,11 +168,11 @@ vector<string> scatterArgs(){
 }
 
 string aMayuscula(string cadena) {
-  for (int i = 0; i < cadena.length(); i++) cadena[i] = toupper(cadena[i]);
+  for (string::size_type i = 0; i < cadena.length(); i++) cadena[i] = toupper(cadena[i]);
   return cadena;
 }
 string aMinuscula(string cadena) {
-  for (int i = 0; i < cadena.length(); i++) cadena[i] = tolower(cadena[i]);
+  for (string::size_type i = 0; i < cadena.length(); i++) cadena[i] = tolower(cadena[i]);
   return cadena;
 }
 
