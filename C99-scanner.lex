@@ -8,7 +8,7 @@ IS                      ((u|U)|(u|U)?(l|L|ll|LL)|(l|L|ll|LL)(u|U))
 
 %{
 #include<bits/stdc++.h>
-#include "1805082_SymbolTable.h"
+#include "SymbolTable.h"
 #include "writer.h"
 #include <stdio.h>
 #include <cstring>

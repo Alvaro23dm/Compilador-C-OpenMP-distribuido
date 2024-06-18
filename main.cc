@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <iostream>
-#include "1805082_SymbolTable.h"
+#include "SymbolTable.h"
 
 extern int yydebug;
 extern FILE *yyin, *yyout;
@@ -13,6 +13,7 @@ extern int MVL_LINNUM;
 
 extern void yyerror(const char *s);
 extern int yyparse ();
+extern void lastLine();
 
 std::ofstream logFile, errFile, sym_tables, output;
 
@@ -53,7 +54,7 @@ int main( int argc, const char* argv[] )
 
   yyparse();
 
-  output << (linea ? linea : "") << endl;
+  lastLine();
   table.exitScope();
 
   logFile << endl;

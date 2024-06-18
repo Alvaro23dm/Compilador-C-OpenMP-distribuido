@@ -34,12 +34,20 @@ extern void end_lexer(void);
 extern void openmp_parse_expr();
 static int openmp_error(const char*);
 
+int chunk = 0;
+int contadorTask=0;
+extern int MPIInitDone;
+extern int main_end;
+extern void MPIInit();
+
 void * (*exprParse)(const char*) = NULL;
 
 //From template
 extern void addArg(const char *arg);
 extern void MPIAlloc();
 extern void MPIBroad();
+extern void MPIScatterChunk();
+extern void MPITask();
 
 %}
 
@@ -86,7 +94,7 @@ corresponding C type is union name defaults to YYSTYPE.
 %type <stype> expression variable
 
 /* start point for the parsing */
-%start openmp_directive
+%start start
 
 %%
 
@@ -99,23 +107,40 @@ variable :   EXPR_STRING {$$=$1; }
         ;
 */
 var_list : variable {
-                      printf("var1: %s\n", $1);
+                      printf("var: %s\n", $1);
                       addArg($1);
                     }
         | var_list ',' variable 
                     {
-                      printf("var2: %s\n", $3);
+                      printf("var: %s\n", $3);
                       addArg($3);
                     }
         ;
 		
 var_chunk : variable ':' CHUNK '(' variable ')'
+            {
+              chunk = 1;
+              printf("var1: %s\n", $1);
+              addArg($1);
+              printf("var2: %s\n", $5);
+              addArg($5);
+            }
 		  ;
 		  
 var_chunk_list : var_chunk
 			   | var_chunk ',' var_chunk_list
 			   ;
-	   
+
+start :   {
+          if (MPIInitDone==0)
+            {
+            MPIInit();
+            MPIInitDone = 1;
+            main_end = 1;
+            }
+          }
+          openmp_directive
+      ;
 openmp_directive : parallel_directive
                  | metadirective_directive
                  | declare_variant_directive
@@ -457,7 +482,7 @@ cluster_teams_distribute_directive : CLUSTER TEAMS DISTRIBUTE { } cluster_teams_
 cluster_teams_master_directive : CLUSTER TEAMS MASTER { } 
 							   ;
 						
-task_async_directive : TASK_ASYNC { } task_async_clause_optseq
+task_async_directive : TASK_ASYNC { } task_async_clause_optseq { MPITask(); }
 					 ;
 					 
 					   
@@ -2435,8 +2460,10 @@ cluster_teams_distribute_clause : if_target_clause
 task_async_clause : DEPEND { } '(' dependance_type ':' var_list ')' 
 				  ;
 
-dependance_type : IN { }
-				| OUT { }
+dependance_type : IN {printf("var: IN\n");
+                      addArg("IN"); }
+				| OUT {printf("var: OUT\n");
+                      addArg("OUT"); }
 				;
 
 							
@@ -3048,7 +3075,7 @@ alloc_clause : ALLOC '(' var_list ')' { MPIAlloc(); };
 
 broad_clause : BROAD { } '(' var_list ')' { MPIBroad(); };
 
-scatter_clause : SCATTER { } '(' var_chunk_list ')' ;
+scatter_clause : SCATTER { } '(' var_chunk_list ')'  { MPIScatterChunk(); } ;
 			   
 halo_clause : HALO { } '(' var_chunk ')';
 			   

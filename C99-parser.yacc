@@ -1,6 +1,6 @@
 %{
 #include<bits/stdc++.h>
-#include "1805082_SymbolTable.h"
+#include "SymbolTable.h"
 #include "templates.h"
 void yyerror(char const *s);
 extern int yylex (void);
@@ -9,6 +9,7 @@ int error_count = 0;
 
 int main_init = 0;
 int main_end = 0;
+int MPIInitDone = 0;
 
 extern ofstream logFile;
 extern ofstream errFile;
@@ -21,32 +22,32 @@ SymbolTable table(30);
 	vector <SymbolInfo*> *symList;
 }
 
-%token<sym> IDENTIFIER STRING_LITERAL SIZEOF
-%token<sym> PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
-%token<sym> AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
-%token<sym> SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
-%token<sym> XOR_ASSIGN OR_ASSIGN
+%token SIZEOF
+%token PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
+%token AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
+%token SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
+%token XOR_ASSIGN OR_ASSIGN
 
 %token<sym> TYPEDEF EXTERN STATIC AUTO REGISTER INLINE RESTRICT
 %token<sym> CHAR SHORT INT LONG SIGNED UNSIGNED FLOAT DOUBLE CONST VOLATILE VOID
-%token<sym> BOOL COMPLEX IMAGINARY
+%token<sym> BOOL COMPLEX IMAGINARY USER_DEFINED
 %token<sym> STRUCT UNION ENUM ELLIPSIS
 
-%token<sym> CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
+%token CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
 
-%token<sym> CONSTANT
+%token<sym> CONSTANT IDENTIFIER STRING_LITERAL
 
 %type<sym> type_specifier struct_or_union_specifier enum_specifier struct_or_union specifier_qualifier_list   
 %type<sym> storage_class_specifier direct_declarator declarator declaration_specifiers type_qualifier   
-%type<sym> init_declarator initializer parameter_declaration  struct_declarator      
+%type<sym> init_declarator initializer parameter_declaration  struct_declarator   
 
 %type<sym> primary_expression postfix_expression unary_expression cast_expression
 %type<sym> multiplicative_expression additive_expression shift_expression
 %type<sym> relational_expression equality_expression and_expression
 %type<sym> exclusive_or_expression inclusive_or_expression logical_and_expression
-%type<sym> logical_or_expression conditional_expression assignment_expression
+%type<sym> logical_or_expression conditional_expression assignment_expression function_specifier 
 %type<symList> init_declarator_list parameter_type_list parameter_list struct_declaration_list struct_declarator_list struct_declaration
-%type<symList> declaration_list identifier_list declaration 
+%type<symList> declaration_list identifier_list declaration  
 
 %start translation_unit
 %%
@@ -182,7 +183,7 @@ assignment_operator
 	;
 
 expression
-	: assignment_expression
+	: assignment_expression 
 	| expression ',' assignment_expression
 	;
 
@@ -548,9 +549,10 @@ block_item
 	: declaration
 	| 
 	{
-		if(main_init == 1){
+		if(main_init == 1 && MPIInitDone == 0){
 			MPIInit();
 			main_init = 0;
+			MPIInitDone = 1;
 			main_end = 1;
 		}
 	}
@@ -582,16 +584,15 @@ jump_statement
 	| CONTINUE ';'
 	| BREAK ';'
 	| 
-	
-	RETURN {	
+	RETURN
+	{	
 		if(main_end == 1){
 			MPIFinalize();
 			main_end = 0;
 		}
 	}  ';'
-	| 
-	
-	RETURN 
+	|
+	RETURN
 	{	
 		if(main_end == 1){
 			MPIFinalize();
@@ -666,7 +667,7 @@ function_definition
 		}
 	} compound_statement {
 		$2->setIsDefined(true);
-		table.exitScope(); 
+		table.exitScope();
 	}
 	;
 
