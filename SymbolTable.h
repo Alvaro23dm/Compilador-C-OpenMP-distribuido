@@ -1,6 +1,8 @@
 #ifndef SYMBOLTABLE_SYMBOLTABLE_H
 #define SYMBOLTABLE_SYMBOLTABLE_H
+
 #include<bits/stdc++.h>
+
 using namespace std;
 
 extern ofstream logFile, sym_tables;
