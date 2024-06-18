@@ -3,6 +3,7 @@ fparse
 y.tab.cc
 *.hh
 lex.yy.cc
+ompparser.cc
 *.gv
 *.output
 
