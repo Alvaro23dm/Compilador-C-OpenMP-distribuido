@@ -43,7 +43,7 @@ SymbolTable table(30);
 
 %type<sym> primary_expression postfix_expression unary_expression cast_expression
 %type<sym> multiplicative_expression additive_expression shift_expression
-%type<sym> relational_expression equality_expression and_expression
+%type<sym> relational_expression equality_expression and_expression expression
 %type<sym> exclusive_or_expression inclusive_or_expression logical_and_expression
 %type<sym> logical_or_expression conditional_expression assignment_expression function_specifier 
 %type<symList> init_declarator_list parameter_type_list parameter_list struct_declaration_list struct_declarator_list struct_declaration
@@ -56,7 +56,7 @@ primary_expression
     : IDENTIFIER
     | CONSTANT {$$ = $1;}
     | STRING_LITERAL
-    | '(' expression ')'
+    | '(' expression ')' {$$ = $2;}
     ;
 
 postfix_expression
@@ -193,34 +193,88 @@ constant_expression
 
 declaration
 	: declaration_specifiers ';'
+	{
+		if($1->isStruct()){
+			$$ = new vector<SymbolInfo*>();
+			SymbolInfo* symbol = new SymbolInfo(*$1);
+			$$->push_back(symbol);
+			table.insert($1);
+		}
+	}
+	
 	| declaration_specifiers init_declarator_list ';' {
 		$$ = new vector<SymbolInfo*>();
-		for(std::vector<SymbolInfo*>::size_type i = 0; i < $2->size(); i++){
-			// logFile << "Debug: " << $1->getSymbolType() << " Debug: " << $2->at(i)->getSymbolName() << " Debug: " << $2->at(i)->getVariableType() << endl;
-			$2->at(i)->setVariableType($1->getSymbolType());
-			SymbolInfo* symbol = new SymbolInfo(*$2->at(i));
-			$$->push_back(symbol);
-			if (table.insert($2->at(i))) {
-				logFile << "Inserted: " << $2->at(i)->getSymbolName() << " in scope " << table.printScopeId() << endl;
+		bool hasTypedef = (strstr($1->getSymbolType().c_str(), "TYPEDEF") != NULL);
+		if($1->isStruct()){
+			if($1->getParamList() != nullptr){
+				for(std::vector<SymbolInfo*>::size_type i = 0; i < $2->size(); i++){
+					// logFile << "Debug: " << $1->getSymbolType() << " Debug: " << $2->at(i)->getSymbolName() << " Debug: " << $2->at(i)->getVariableType() << endl;
+					if(hasTypedef) $2->at(i)->setSymIsType(true);
+					$2->at(i)->setVariableType($1->getSymbolType());				
+					$2->at(i)->setIsStruct(true);
+					$2->at(i)->setParamList($1->getParamList());
+					SymbolInfo* symbol = new SymbolInfo(*$2->at(i));
+					$$->push_back(symbol);
+					table.insert($2->at(i));
+				}
 			}
 			else {
-				logFile << "Error: " << $2->at(i)->getSymbolName() << " already exists in scope " << endl;
-				errFile << "Error: " << $2->at(i)->getSymbolName() << " already exists in scope " << endl;
-				error_count++;
+				$1->setParamList($2);
+				$$->push_back($1);
+				for(std::vector<SymbolInfo*>::size_type i = 0; i < $2->size(); i++){
+					$2->at(i)->setVariableType($1->getSymbolName());
+					table.insert($2->at(i));
+				}
+			}
+		}
+		else{
+			for(std::vector<SymbolInfo*>::size_type i = 0; i < $2->size(); i++){
+				// logFile << "Debug: " << $1->getSymbolType() << " Debug: " << $2->at(i)->getSymbolName() << " Debug: " << $2->at(i)->getVariableType() << endl;
+				$2->at(i)->setVariableType($1->getSymbolType());
+				if(hasTypedef) $2->at(i)->setSymIsType(true);
+				if(!$2->at(i)->isFunction()){
+					SymbolInfo* symbol = new SymbolInfo(*$2->at(i));
+					$$->push_back(symbol);
+					table.insert($2->at(i));
+				}
 			}
 		}
 	}
 	;
 
 declaration_specifiers
-	: storage_class_specifier
-	| storage_class_specifier declaration_specifiers { $$ = $2; }
+	: storage_class_specifier { $$ = $1; }
+	| storage_class_specifier declaration_specifiers 
+		{ 
+			std::ostringstream oss;
+			oss << $1->getSymbolType() << "_" << $2->getSymbolType();
+			$2->setSymbolType(oss.str());
+			$$ = $2;
+		}
 	| type_specifier { $$ = $1; }
-	| type_specifier declaration_specifiers { $$ = $2; }
-	| type_qualifier
-	| type_qualifier declaration_specifiers { $$ = $2; }
-	| function_specifier
-	| function_specifier declaration_specifiers { $$ = $2; }
+	| type_specifier declaration_specifiers 
+		{ 
+			std::ostringstream oss;
+			oss << $1->getSymbolType() << "_" << $2->getSymbolType();
+			$2->setSymbolType(oss.str());
+			$$ = $2;
+		}
+	| type_qualifier { $$ = $1; }
+	| type_qualifier declaration_specifiers 
+		{ 
+			std::ostringstream oss;
+			oss << $1->getSymbolType() << "_" << $2->getSymbolType();
+			$2->setSymbolType(oss.str());
+			$$ = $2;
+		}
+	| function_specifier { $$ = $1; }
+	| function_specifier declaration_specifiers 
+		{ 
+			std::ostringstream oss;
+			oss << $1->getSymbolType() << "_" << $2->getSymbolType();
+			$2->setSymbolType(oss.str());
+			$$ = $2;
+		}
 	;
 
 init_declarator_list
@@ -254,6 +308,7 @@ type_specifier
     | BOOL          { $$ = new SymbolInfo("bool", "BOOL"); }
     | COMPLEX       { $$ = new SymbolInfo("complex", "COMPLEX"); }
     | IMAGINARY     { $$ = new SymbolInfo("imaginary", "IMAGINARY"); }
+	| USER_DEFINED  { $$ = $1; }
     | struct_or_union_specifier  { $$ = $1; }
     | enum_specifier             { $$ = $1; }
     ;

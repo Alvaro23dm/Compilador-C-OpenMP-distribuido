@@ -26,6 +26,7 @@ static char * get_pragma();
 
 extern ofstream logFile;
 extern ofstream errFile;
+extern SymbolTable table;
 
 int column = 0;
 int line_count = 1;
@@ -92,16 +93,21 @@ extern int error_count;
 
 {L}({L}|{D})*		{
 	count();
-	SymbolInfo *s = new SymbolInfo(yytext, (char *)"IDENTIFIER");
-	yylval.sym = s;
-
-	// if (strlen(yytext) > 31){
-	// 	logFile << "Error at line no  " << line_count << ": " << "Length of ID exeeded 31 characters " <<  yytext << endl << endl;
-	// 	errFile << "Error at line no  " << line_count << ": " << "Length of ID exeeded 31 characters " <<  yytext << endl << endl;
-	// 	error_count++;
-	// }
-
-	return IDENTIFIER;
+	SymbolInfo *s = table.getSymbolInfo(yytext);
+	if(s != NULL && s->getSymIsType()){
+		yylval.sym = new SymbolInfo(yytext, (char *) yytext);
+		return USER_DEFINED;
+	}
+	else{
+		SymbolInfo *s = new SymbolInfo(yytext, (char *)"IDENTIFIER");
+		yylval.sym = s;
+		return IDENTIFIER;
+		// if (strlen(yytext) > 31){
+		// 	logFile << "Error at line no  " << line_count << ": " << "Length of ID exeeded 31 characters " <<  yytext << endl << endl;
+		// 	errFile << "Error at line no  " << line_count << ": " << "Length of ID exeeded 31 characters " <<  yytext << endl << endl;
+		// 	error_count++;
+		// }
+	}
 }
 
 0[xX]{H}+{IS}?		{ count(); return(CONSTANT); }

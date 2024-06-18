@@ -22,6 +22,7 @@ private:
     bool isArr = false;
     bool isPoint = false;
     bool isStrct = false;
+	bool isType = false;
     vector<string> arrSize;
     
     
@@ -41,6 +42,7 @@ public:
         nextSymbol = s1.nextSymbol; 
         hashIdx = s1.hashIdx;
         hashPos = s1.hashPos;
+		isType = s1.isType;
         returnType = s1.returnType;  
         varType = s1.varType;
 
@@ -71,6 +73,14 @@ public:
 
     string getVariableType() {
         return varType;
+    }
+
+	void setSymIsType(bool set){
+        isType = set;
+    }
+
+    bool getSymIsType(){
+        return isType;
     }
 
     void setParamList(vector <SymbolInfo*>* list){
@@ -332,15 +342,12 @@ public:
     void printCurr() {
         bool enteredScope = false;
         bool printEnter = false;
-        
+
         for (int i = 0; i < total_buckets; i++) {
             SymbolInfo *currSymbol = chainHashTable[i];
             if(enteredScope == false){
-                // cout << "ScopeTable# " << scopeID << endl;
-             
                 sym_tables << "ScopeTable # " << scopeID << endl;
                 enteredScope = true;
-
             }
             if(currSymbol != NULL){
                 // cout << i << " --> ";
@@ -352,10 +359,10 @@ public:
                 // cout << "< " << currSymbol->getSymbolName() << " : " << currSymbol->getSymbolType() << " > ";
                 sym_tables << "| ";
                 if(currSymbol->isStruct()){
-                    sym_tables << "< " << currSymbol->getSymbolName() << " , " << currSymbol->getVariableType() <<  " , " << currSymbol->getParamListString() << " >";
+                    sym_tables << "< " << currSymbol->getSymbolName() << " , " << "Struct Symbol" << " , " << currSymbol->getVariableType() << " , " << currSymbol->getParamListString() << " >";
                 }
                 else if(currSymbol->isArray()){
-                    sym_tables << "< " << currSymbol->getSymbolName() << " , " << "Array Symbol" << " , " << currSymbol->getVariableType() <<  " < " << currSymbol->getSizeList() << " > " << " >";
+                    sym_tables << "< " << currSymbol->getSymbolName() << " , " << "Array Symbol" << " , " << currSymbol->getVariableType() << " < " << currSymbol->getSizeList() << " > " << " >";
                 }
                 else if(currSymbol->isFunction()){
                     sym_tables << "< " << currSymbol->getSymbolName() << " , " << "Function Symbol" << " , " << currSymbol->getVariableType() << " , " << "Parameter List: " << currSymbol->getParamListString() << " >";
