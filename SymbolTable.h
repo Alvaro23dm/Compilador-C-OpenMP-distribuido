@@ -105,7 +105,7 @@ public:
     }
 
     string getSizeList(){
-        string sizeListStr = " Array Size: ";
+        string sizeListStr = "";
         for(std::vector<string>::size_type i = 0; i < arrSize.size(); i++){
             sizeListStr += (arrSize.at(i));
             if(i < arrSize.size() - 1){
@@ -362,7 +362,7 @@ public:
                     sym_tables << "< " << currSymbol->getSymbolName() << " , " << "Struct Symbol" << " , " << currSymbol->getVariableType() << " , " << currSymbol->getParamListString() << " >";
                 }
                 else if(currSymbol->isArray()){
-                    sym_tables << "< " << currSymbol->getSymbolName() << " , " << "Array Symbol" << " , " << currSymbol->getVariableType() << " < " << currSymbol->getSizeList() << " > " << " >";
+                    sym_tables << "< " << currSymbol->getSymbolName() << " , " << "Array Symbol" << " , " << currSymbol->getVariableType() << " < Array Size: " << currSymbol->getSizeList() << " > " << " >";
                 }
                 else if(currSymbol->isFunction()){
                     sym_tables << "< " << currSymbol->getSymbolName() << " , " << "Function Symbol" << " , " << currSymbol->getVariableType() << " , " << "Parameter List: " << currSymbol->getParamListString() << " >";
