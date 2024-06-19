@@ -218,7 +218,7 @@ void MPIAlloc(){
     }else if (nCorchetes==1){
         vector<string> items = extractValues(arg1);
         alloc =  "\tif (__taskid != 0)\n"
-                        "\t\t" + items.at(0) + "= ( " + sim1->getVariableType() + " * ) malloc ( " + items.at(1) + " * " + items.at(2) + " * sizeof (" + sim1->getVariableType() + ") );\n";
+                        "\t\t" + items.at(0) + "= ( " + aMinuscula(sim1->getVariableType()) + " * ) malloc ( " + items.at(1) + " * " + items.at(2) + " * sizeof (" + aMinuscula(sim1->getVariableType()) + ") );\n";
     }else{
         errFile << "Error: MPIAlloc argument has wrong format" << endl;
         exit(1);
@@ -230,21 +230,17 @@ void MPIAlloc(){
 void MPIBroad(){
     preConfPragma();
 
-    if(args.size() != 2){
-        errFile << "Error: Broad pragma must have 2 argument and it has " << args.size() << endl;
-        exit(1);
-    }
+	string broad = "";
 
-    
-    string arg1 = args.at(0);
-    string arg2 = args.at(1);
-
-    SymbolInfo *sim1 = table.getSymbolInfo(arg1);
-    SymbolInfo *sim2 = table.getSymbolInfo(arg2);
-
-    string broad =  "\tMPI_Bcast(&" + arg1 + ", 1, MPI_" + sim1->getVariableType() + ", 0, MPI_COMM_WORLD);\n"
-                    "\tMPI_Bcast(" + arg2 + ", N, MPI_" + sim2->getVariableType()  + ", 0, MPI_COMM_WORLD);\n";
-
+    for(const auto& arg : args){
+		SymbolInfo *sim = table.getSymbolInfo(arg);
+		if(sim->isArray()){
+			broad += "\tMPI_Bcast(" + string(arg) + ", " + sim->getSizeList() + ", MPI_" + sim->getVariableType()  + ", 0, MPI_COMM_WORLD);\n";
+		}
+		else{
+			broad += "\tMPI_Bcast(&" + string(arg) + ", 1, MPI_" + sim->getVariableType() + ", 0, MPI_COMM_WORLD);\n";
+		}
+	}
     output << broad << endl;
     args.clear();
 }
