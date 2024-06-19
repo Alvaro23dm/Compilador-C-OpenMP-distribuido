@@ -16,3 +16,10 @@ core
 .vscode
 inputs
 tests
+
+#Pruebas
+error.txt
+log.txt
+sym_tables.txt
+input.c
+output.c
