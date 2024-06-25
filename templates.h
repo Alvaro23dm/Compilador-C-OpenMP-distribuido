@@ -178,7 +178,8 @@ string aMinuscula(string cadena) {
 
 //-------------------------------PLANTILLAS--------------------
 void MPIInit(){
-    string init=    "\tint __taskid = -1, __numprocs = -1;\n\n"
+    string init=    "\tint __taskid = -1, __numprocs = -1;\n"
+					"\tMPI_Status __status;\n\n"
                     "\tMPI_Init(&argc,&argv);\n"
                     "\tMPI_Comm_size(MPI_COMM_WORLD,&__numprocs);\n" 
                     "\tMPI_Comm_rank(MPI_COMM_WORLD,&__taskid);\n"
