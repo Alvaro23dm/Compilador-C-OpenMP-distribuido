@@ -1,9 +1,16 @@
+#include <omp.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/time.h>
+#include <assert.h>
+#include <mpi.h>
 
-static unsigned long int num_steps = (unsigned long int)((1<<30)-1) ;
+#define NUM_THREADS 8
+
+unsigned long num_steps = (unsigned long)((1<<30)-1) ;
 double step;
-
-int main (int argc, char** argv) { 
-    unsigned long int i;
+int main (int argc, char** argv) {
+    unsigned int i;
     double pi;
     double PI25DT = 3.141592653589793238462643;
     double x;
@@ -14,12 +21,12 @@ int main (int argc, char** argv) {
     double segundos;
 
 	int __taskid = -1, __numprocs = -1;
+	MPI_Status __reqs;
+	MPI_Status __status;
 
 	MPI_Init(&argc,&argv);
 	MPI_Comm_size(MPI_COMM_WORLD,&__numprocs);
 	MPI_Comm_rank(MPI_COMM_WORLD,&__taskid);
-	MPI_Get_processor_name(processor_name,&namelen);
-
 	if (__taskid == 0) {
 
 	    if (argc == 1) {
@@ -31,31 +38,49 @@ int main (int argc, char** argv) {
 
 	    num_steps = num_steps * factor;
 
-	    printf("%ld num_steps, %25.23f step size i: %ld size num_steps: %ld\n",
-			num_steps, (double)1.0/(double) num_steps, sizeof(i), sizeof(num_steps));
-			
-	    gettimeofday(&t1, NULL);
+	    printf("%ld num_steps, %25.23f step size i: %ld size num_steps: %ld\n", num_steps, (double)1.0/(double) num_steps, sizeof(i), sizeof(num_steps));
+		gettimeofday(&t1, NULL);
 
-	    step = 1.0/(double) num_steps;
+		step = 1.0/(double) num_steps;
 
 	}
-	MPI_Bcast(&num_steps, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	MPI_Bcast(step, N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&num_steps, 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&step, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-                for (i=0;i< num_steps; i++) {
-        x = (i+0.5)*step;
-        sum += 4.0/(1.0+x*x);
-    }
-    pi = step * sum;
 
-    gettimeofday(&t2, NULL);
-    segundos = (((t2.tv_usec - t1.tv_usec)/1000000.0f)  + (t2.tv_sec - t1.tv_sec));
+		
+		double __sum = 0.0;
 
-    printf("Pi es %25.23f, calc con %ld pasos en %f segundos\n", pi,num_steps,segundos);
-    printf("Pi es %25.23f, Error relativo %10.8e\n", PI25DT, (double) (pi - PI25DT)/PI25DT);
+		int __iter;
+		int __start;
+		int __end;
+		__iter = ((num_steps - 0) / __numprocs);
+		if (__taskid < ((num_steps - 0) % __numprocs))
+			__iter++;
+		__start = ( 0 + __iter * __taskid) ;
+		if (__taskid >= ((num_steps - 0) % __numprocs))
+			__start += ((num_steps - 0) % __numprocs);
+		__end = __start + __iter ;
+		if (__taskid == (__numprocs-1)) assert (__end == num_steps);
 
+		for (i=__start;i< __end; i++) {
+			x = (i+0.5)*step;
+			__sum += 4.0/(1.0+x*x);
+		}
+
+		MPI_Reduce(&__sum, &sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	if(__taskid ==0){
+		pi = step * sum;
+
+		gettimeofday(&t2, NULL);
+		segundos = (((t2.tv_usec - t1.tv_usec)/1000000.0f)  + (t2.tv_sec - t1.tv_sec));
+
+		printf("Pi %25.23f, calc con %ld pasos en %f segundos\n", pi,num_steps,segundos);
+		printf("Pi es %25.23f, Error relativo %10.8e\n", PI25DT, (double)100 * (pi - PI25DT)/PI25DT);
+
+	}
 	MPI_Finalize();
 
-    return(0);
+	return(0);
 }
-

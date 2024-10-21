@@ -36,6 +36,7 @@ static int openmp_error(const char*);
 
 int chunk = 0;
 int contadorTask=0;
+int update = 0;
 extern int MPIInitDone;
 extern int main_end;
 extern void MPIInit();
@@ -48,6 +49,8 @@ extern void MPIAlloc();
 extern void MPIBroad();
 extern void MPIScatterChunk();
 extern void MPITask();
+extern void MPIScatterHalo();
+extern void MPIUpdateHalo();
 
 %}
 
@@ -129,6 +132,7 @@ var_chunk : variable ':' CHUNK '(' variable ')'
 		  
 var_chunk_list : var_chunk
 			   | var_chunk ',' var_chunk_list
+			   | var_list
 			   ;
 
 start :   {
@@ -467,7 +471,7 @@ end_declare_cluster_directive : END DECLARE CLUSTER { }
 cluster_data_directive : CLUSTER DATA { } cluster_data_clause_optseq
 					   ;
 
-cluster_update_directive : CLUSTER UPDATE { } cluster_update_clause_optseq
+cluster_update_directive : CLUSTER UPDATE { update =1; } cluster_update_clause_optseq { }
 			 ; 
 
 cluster_teams_directive : CLUSTER TEAMS { } cluster_teams_clause_optseq
@@ -3075,9 +3079,17 @@ alloc_clause : ALLOC '(' var_list ')' { MPIAlloc(); };
 
 broad_clause : BROAD { } '(' var_list ')' { MPIBroad(); };
 
-scatter_clause : SCATTER { } '(' var_chunk_list ')'  { MPIScatterChunk(); } ;
+scatter_clause : SCATTER { } '(' var_chunk_list ')'  { if(chunk == 1){ MPIScatterChunk(); }} ;
 			   
-halo_clause : HALO { } '(' var_chunk ')';
+halo_clause : HALO { } '(' var_chunk ')'
+	{ 
+		if(update==1){
+			MPIUpdateHalo(); 
+			update = 0;
+		}else{
+			MPIScatterHalo(); 
+		}
+	} ; 
 			   
 gather_clause : GATHER { } '(' var_chunk_list ')' ;
 			  

@@ -96,6 +96,21 @@ vector<string> splitMatAIndices(const string& input) {
     return {matA, fA, cA};
 }
 
+void splitMatIndex(vector<string>& vec, const string& input) {
+    size_t start_bracket1 = input.find('[');
+    size_t end_bracket1 = input.find(']');
+    size_t start_bracket2 = input.find('[', end_bracket1);
+    size_t end_bracket2 = input.find(']', start_bracket2);
+
+    string val1 = input.substr(0, start_bracket1);
+    string val2 = input.substr(start_bracket1 + 1, end_bracket1 - start_bracket1 - 1);
+    string val3 = input.substr(start_bracket2 + 1, end_bracket2 - start_bracket2 - 1);
+
+	vec.push_back(val1);
+	vec.push_back(val2);
+	vec.push_back(val3);
+}
+
 void preConfPragma(){
     //statementZone = 1; //puede dar problemas
     if(zonaPragma==0){
@@ -176,14 +191,26 @@ string aMinuscula(string cadena) {
   return cadena;
 }
 
+vector<string> scatterHaloArgs(){
+	vector<string> result;
+	splitMatIndex(result, args.at(0));
+	splitMatIndex(result, args.at(1));
+	result.push_back(args.at(2));
+	for (size_t i = 0; i < result.size(); ++i) {
+        cout << result[i] << endl;
+    }
+	return result;
+}
+
 //-------------------------------PLANTILLAS--------------------
 void MPIInit(){
     string init=    "\tint __taskid = -1, __numprocs = -1;\n"
+					"\tMPI_Request __reqs;\n"
 					"\tMPI_Status __status;\n\n"
                     "\tMPI_Init(&argc,&argv);\n"
                     "\tMPI_Comm_size(MPI_COMM_WORLD,&__numprocs);\n" 
                     "\tMPI_Comm_rank(MPI_COMM_WORLD,&__taskid);\n"
-                    "\tMPI_Get_processor_name(processor_name,&namelen);\n\n"
+                    //"\tMPI_Get_processor_name(processor_name,&namelen);\n\n"
                     "\tif (__taskid == 0) {\n";
     output << init << endl;
     statementZone = 1;
@@ -215,7 +242,7 @@ void MPIAlloc(){
 
     int nCorchetes = countBrackets(arg1);
     if(nCorchetes==2){
-        alloc= "\t" + sim1->getVariableType() + " __" + arg1 + ";\n";
+        alloc= "\t" + aMinuscula(sim1->getVariableType()) + " __" + arg1 + ";\n";
     }else if (nCorchetes==1){
         vector<string> items = extractValues(arg1);
         alloc =  "\tif (__taskid != 0)\n"
@@ -232,7 +259,6 @@ void MPIBroad(){
     preConfPragma();
 
 	string broad = "";
-
     for(const auto& arg : args){
 		SymbolInfo *sim = table.getSymbolInfo(arg);
 		if(sim->isArray()){
@@ -242,7 +268,7 @@ void MPIBroad(){
 			broad += "\tMPI_Bcast(&" + string(arg) + ", 1, MPI_" + sim->getVariableType() + ", 0, MPI_COMM_WORLD);\n";
 		}
 	}
-    output << broad << endl;
+	output << broad << endl;
     args.clear();
 }
 
@@ -284,10 +310,10 @@ void MPIScatterChunk(){
         "\t\t\tcountsA[__taskid] = (" + dos + " - (__" + dos + "_chunk * (__numprocs - 1))) * " + cuatro + ";\n"
         "\t\telse\n"
         "\t\t\tcountsA[__taskid] = __" + dos + "_chunk * " + cuatro + ";\n"
-        "\t\tif (__taskid != 0) {\n"
-        "\t\t\t__" + uno + " = MATRIX2D(sizeof(" + aMinuscula(sim1->getVariableType()) + "), " + dos + ", " + tres + ");\n"
-        "\t\t}\n"
-        "\t\t" + uno + " = MATRIX2D(sizeof(" + aMinuscula(sim1->getVariableType()) + "), __" + dos + "_chunk * __numprocs, " + tres + ");\n"
+        //"\t\tif (__taskid != 0) {\n"
+        //"\t\t\t__" + uno + " = MATRIX2D(sizeof(" + aMinuscula(sim1->getVariableType()) + "), " + dos + ", " + tres + ");\n"
+        //"\t\t}\n"
+        //"\t\t" + uno + " = MATRIX2D(sizeof(" + aMinuscula(sim1->getVariableType()) + "), __" + dos + "_chunk * __numprocs, " + tres + ");\n"
         "\n"
 
         "\t\t" + aMinuscula(sim1->getVariableType()) + " *" + uno + "aux = &" + uno + "[0][0];\n"
@@ -297,7 +323,65 @@ void MPIScatterChunk(){
         "\t\tMPI_Scatterv(" + uno + "aux, countsA, displsA, MPI_" + sim1->getVariableType() + ", __" + uno + "aux + (__" + dos + "_chunk * " + tres + " * __taskid), countsA[__taskid], MPI_" + sim1->getVariableType() + ", 0, MPI_COMM_WORLD);\n"
         "\t}\n";
 	output << scatter << endl;
+	chunk = 0;
 	args.clear();
+}
+
+void MPIScatterHalo(){
+
+	vector<string> argsScatterHalo = scatterHaloArgs();
+
+	string uno = argsScatterHalo.at(0);//w
+	string dos = argsScatterHalo.at(1);//M
+	string tres = argsScatterHalo.at(2);//N
+
+	SymbolInfo *sim1 = table.getSymbolInfo(uno);
+
+	string scatterHalo = 
+		"\tdouble __" + uno + "[" + dos+ "][" + tres+ "];\n"
+		"\tif (__taskid == 0)\n"
+		"\t\tfor ( i = 0; i < M; i++ )\n"
+		"\t\t\tfor ( j = 0; j < " + tres+ "; j++ )\n" 
+		"\t\t\t\t__" + uno + "[i][j] = " + uno + "[i][j];\n"
+		"\tMPI_Bcast(&__" + uno + "[0][0], " + dos + "*" + tres+ ", MPI_" + sim1->getVariableType() + ", 0, MPI_COMM_WORLD);\n";
+	output << scatterHalo << endl;
+}
+
+void MPIUpdateHalo(){
+	vector<string> argsScatterHalo = scatterHaloArgs();
+
+	string uno = argsScatterHalo.at(0);//w
+	string dos = argsScatterHalo.at(1);//M
+	string tres = argsScatterHalo.at(2);//N
+
+	SymbolInfo *sim1 = table.getSymbolInfo(uno);
+
+	string updateHalo = 
+	"\t{\n"
+		"\t\tint __chunk;\n"
+		"\t\tint __start_" + uno + ";\n"
+		"\t\tint __end_" + uno + ";\n"
+		"\t\t__chunk = (" + dos + " / __numprocs);\n"
+		"\t\tif (__taskid < (" + dos + " % __numprocs))\n"
+		"\t\t\t__chunk++;\n"
+		"\t\t__start_" + uno + " =  __chunk * __taskid;\n"
+		"\t\tif (__taskid >= (" + dos + " % __numprocs))"
+		"\t\t\t__start_" + uno + " += " + dos + " % __numprocs;\n"
+		"\t\t__end_" + uno + " = __start_" + uno + " + __chunk ;\n"
+		"\t\tif (__taskid == 0) __start_" + uno + " = __start_" + uno + " - 1;\n"
+		"\t\tif (__taskid == (__numprocs-1)) __end_" + uno + " = __end_" + uno + " - 1;\n"
+		"\t\tif (__taskid == (__numprocs-1)) assert (__end_" + uno + " == (" + dos + "-1));\n"
+		"\t\t\tif(__taskid > 0)\n"
+		"\t\t\t\tMPI_Isend(__" + uno + "[__start_" + uno + "], 1*" + tres + ", MPI_" + sim1->getVariableType() + ", __taskid - 1, 100, MPI_COMM_WORLD, &reqs);\n"
+		"\t\t\tif(__taskid < __numprocs - 1)\n"
+		"\t\t\t\tMPI_Isend(__" + uno + "[__end_" + uno + "-1], 1*" + tres + ", MPI_" + sim1->getVariableType() + ", __taskid + 1, 101, MPI_COMM_WORLD, &reqs);\n"
+		"\t\t\tif(__taskid > 0)\n"
+		"\t\t\t\tMPI_Recv(__" + uno + "[__start_" + uno + "-1], 1*" + tres + ", MPI_" + sim1->getVariableType() + ", __taskid - 1, 101, MPI_COMM_WORLD, &status);\n"
+		"\t\t\tif(__taskid < __numprocs - 1)\n"
+		"\t\t\t\tMPI_Recv(__" + uno + "[__end_" + uno + "], 1*" + tres + ", MPI_" + sim1->getVariableType() + ", __taskid + 1, 100, MPI_COMM_WORLD, &status);\n"
+	"\t}\n\n";
+	output << updateHalo << endl;
+    args.clear();
 }
 
 void MPITask(){
@@ -305,7 +389,6 @@ void MPITask(){
     task = 1;
     string task =  
         "\tif (__taskid == " + to_string(contadorTask) + ") {\n";
-    contadorTask++;
 
     vector<string> inArg = inTask();
 
@@ -313,11 +396,10 @@ void MPITask(){
         vector<string> argItem = argFormat(arg);
         SymbolInfo *sim = table.getSymbolInfo(argItem.at(0));
 
-        task += "\t\tMPI_Recv (&" + argItem.at(0) + "[" + argItem.at(1) + "]" +", " + argItem.at(2) + ", MPI_" +  sim->getVariableType() + ", prev, 0, MPI_COMM_WORLD, &__status);\n";
+        task += "\t\tMPI_Recv (&" + argItem.at(0) + "[" + argItem.at(1) + "]" +", " + argItem.at(2) + ", MPI_" +  sim->getVariableType() + ", " + to_string(contadorTask -1) + ", 0, MPI_COMM_WORLD, &__status);\n";
     }
 
     output << task;
-
 }
 
 void MPITaskEnd(){
@@ -330,9 +412,11 @@ void MPITaskEnd(){
         vector<string> argItem = argFormat(arg);
         SymbolInfo *sim = table.getSymbolInfo(argItem.at(0));
         
-        task += "\t\tMPI_Send (&" + argItem.at(0) + "[" + argItem.at(1) + "]" +", " + argItem.at(2) + ", MPI_" +  sim->getVariableType() + ", sig, 0, MPI_COMM_WORLD);\n";
+        task += "\t\tMPI_Send (&" + argItem.at(0) + "[" + argItem.at(1) + "]" +", " + argItem.at(2) + ", MPI_" +  sim->getVariableType() + ", " + to_string(contadorTask +1) + ", 0, MPI_COMM_WORLD);\n";
     }
     task += "\t}";
+
+	contadorTask++;
 
     output << task << endl;
     args.clear();

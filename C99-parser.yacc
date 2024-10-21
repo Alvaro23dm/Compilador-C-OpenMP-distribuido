@@ -14,7 +14,7 @@ int MPIInitDone = 0;
 extern ofstream logFile;
 extern ofstream errFile;
 
-SymbolTable table(30);
+SymbolTable table(38);
 %}
 
 %union{
@@ -38,8 +38,8 @@ SymbolTable table(30);
 %token<sym> CONSTANT IDENTIFIER STRING_LITERAL
 
 %type<sym> type_specifier struct_or_union_specifier enum_specifier struct_or_union specifier_qualifier_list   
-%type<sym> storage_class_specifier direct_declarator declarator declaration_specifiers type_qualifier   
-%type<sym> init_declarator initializer parameter_declaration  struct_declarator   
+%type<sym> storage_class_specifier direct_declarator declarator declaration_specifiers type_qualifier initializer_list
+%type<sym> init_declarator initializer parameter_declaration  struct_declarator type_name constant_expression
 
 %type<sym> primary_expression postfix_expression unary_expression cast_expression
 %type<sym> multiplicative_expression additive_expression shift_expression
@@ -68,8 +68,8 @@ postfix_expression
 	| postfix_expression PTR_OP IDENTIFIER
 	| postfix_expression INC_OP
 	| postfix_expression DEC_OP
-	| '(' type_name ')' '{' initializer_list '}'
-	| '(' type_name ')' '{' initializer_list ',' '}'
+	| '(' type_name ')' '{' initializer_list '}' {$$ = $5;}
+	| '(' type_name ')' '{' initializer_list ',' '}'{$$ = $5;} 
 	;
 
 argument_expression_list
@@ -79,11 +79,11 @@ argument_expression_list
 
 unary_expression
 	: postfix_expression {$$ = $1;}
-	| INC_OP unary_expression
-	| DEC_OP unary_expression
-	| unary_operator cast_expression
-	| SIZEOF unary_expression
-	| SIZEOF '(' type_name ')'
+	| INC_OP unary_expression {$$ = $2;}
+	| DEC_OP unary_expression {$$ = $2;}
+	| unary_operator cast_expression {$$ = $2;}
+	| SIZEOF unary_expression {$$ = $2;}
+	| SIZEOF '(' type_name ')' {$$ = $3;}
 	;
 
 unary_operator
@@ -97,7 +97,7 @@ unary_operator
 
 cast_expression
 	: unary_expression {$$ = $1;}
-	| '(' type_name ')' cast_expression
+	| '(' type_name ')' cast_expression {$$ = $4;}
 	;
 
 multiplicative_expression
@@ -208,7 +208,7 @@ declaration
 		if($1->isStruct()){
 			if($1->getParamList() != nullptr){
 				for(std::vector<SymbolInfo*>::size_type i = 0; i < $2->size(); i++){
-					// logFile << "Debug: " << $1->getSymbolType() << " Debug: " << $2->at(i)->getSymbolName() << " Debug: " << $2->at(i)->getVariableType() << endl;
+					logFile << "Debug: " << $1->getSymbolType() << " Debug: " << $2->at(i)->getSymbolName() << " Debug: " << $2->at(i)->getVariableType() << endl;
 					if(hasTypedef) $2->at(i)->setSymIsType(true);
 					$2->at(i)->setVariableType($1->getSymbolType());				
 					$2->at(i)->setIsStruct(true);
@@ -229,7 +229,7 @@ declaration
 		}
 		else{
 			for(std::vector<SymbolInfo*>::size_type i = 0; i < $2->size(); i++){
-				// logFile << "Debug: " << $1->getSymbolType() << " Debug: " << $2->at(i)->getSymbolName() << " Debug: " << $2->at(i)->getVariableType() << endl;
+				logFile << "Debug: " << $1->getSymbolType() << " Debug: " << $2->at(i)->getSymbolName() << " Debug: " << $2->at(i)->getVariableType() << endl;
 				$2->at(i)->setVariableType($1->getSymbolType());
 				if(hasTypedef) $2->at(i)->setSymIsType(true);
 				if(!$2->at(i)->isFunction()){
@@ -391,8 +391,8 @@ struct_declarator_list
 
 struct_declarator
 	: declarator { $$ = $1; }
-	| ':' constant_expression
-	| declarator ':' constant_expression
+	| ':' constant_expression { $$ = $2; }
+	| declarator ':' constant_expression { $$ = $1; }
 	;
 
 enum_specifier
@@ -548,13 +548,13 @@ direct_abstract_declarator
 
 initializer
 	: assignment_expression
-	| '{' initializer_list '}'
-	| '{' initializer_list ',' '}'
+	| '{' initializer_list '}' {$$ = $2;}
+	| '{' initializer_list ',' '}' {$$ = $2;}
 	;
 
 initializer_list
 	: initializer
-	| designation initializer
+	| designation initializer {$$ = $2;}
 	| initializer_list ',' initializer
 	| initializer_list ',' designation initializer
 	;
